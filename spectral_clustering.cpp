@@ -9,6 +9,10 @@
 #include <math.h>
 #include <numeric>
 
+#include "csv.h"
+#include "Eigen/Dense"
+
+
 /*
 Check if input CSV file path exists before proceeding.
 */
@@ -76,6 +80,7 @@ int main(int argc, char** argv)
     if(std::getline(file, fileRow))
     {
         Trim(fileRow);
+
         for (auto & column : SplitRow(fileRow))
         {
             columns.push_back(column);
@@ -84,8 +89,9 @@ int main(int argc, char** argv)
         }
     }
 
+
     // Read remaining file and construct adjacency matrix.
-    std::vector<std::vector<float>> adjacencyMatrix;
+    std::vector<std::vector<float>> adjacencyMatrixPlaceholder;
     while (std::getline(file, fileRow))
     {
         std::vector<std::string> values = SplitRow(fileRow);
@@ -99,7 +105,8 @@ int main(int argc, char** argv)
         float checkZeroSum = 0.0;
         while (it != values.end())
         {   
-            float w = weight(start, stof(*it));
+            // float w = weight(start, stof(*it));
+            float w = stof(*it);
             checkZeroSum += w;
             adjacencyRow.push_back(w);
             columnMap[columns[it - values.begin() - 1]].push_back(*it);
@@ -107,20 +114,41 @@ int main(int argc, char** argv)
         }
 
         if (checkZeroSum > 0.0){
-            adjacencyMatrix.push_back(adjacencyRow);
+            adjacencyMatrixPlaceholder.push_back(adjacencyRow);
         }
+
     }
 
-    // Compute diagonal.
-    std::vector<float> diagonal = computeDiagonal(adjacencyMatrix);
-
-    // Compute Laplacian.
-    std::vector<std::vector<float>> laplacian = computeLaplacian(diagonal, adjacencyMatrix);
+    Eigen::MatrixXd adjacencyMatrix;
     
-    // Compute the Laplacian norm.
-    std::vector<std::vector<float>> laplacianNorm = computeLaplacianNorm(diagonal, laplacian);
+    adjacencyMatrix.resize(adjacencyMatrixPlaceholder.size(), adjacencyMatrixPlaceholder[0].size());
+    
 
-    // Compute eigenvectors / eigenvalues of the Laplacian norm.
+    for (int i = 0; i < adjacencyMatrixPlaceholder.size(); i++)
+    {
+        for (int j = 0; j < adjacencyMatrixPlaceholder[i].size(); j++)
+        {
+            adjacencyMatrix(i, j) = adjacencyMatrixPlaceholder[i][j];
+        }
+    }
+    
+    std::cout << adjacencyMatrix << std::endl;
+
+    Eigen::BDCSVD<Eigen::MatrixXd> SVD(adjacencyMatrix, Eigen::ComputeThinU | Eigen::ComputeThinV);
+    Eigen::MatrixXd U = SVD.matrixU();
+    Eigen::MatrixXd V = SVD.matrixV();
+    std::cout << U << std::endl;
+    std::cout << V << std::endl;
+    // // Compute diagonal.
+    // std::vector<float> diagonal = computeDiagonal(adjacencyMatrix);
+
+    // // Compute Laplacian.
+    // std::vector<std::vector<float>> laplacian = computeLaplacian(diagonal, adjacencyMatrix);
+    
+    // // Compute the Laplacian norm.
+    // std::vector<std::vector<float>> laplacianNorm = computeLaplacianNorm(diagonal, laplacian);
+
+    // // Compute eigenvectors / eigenvalues of the Laplacian norm.
 
     return 0;
 }
