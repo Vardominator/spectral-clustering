@@ -2,6 +2,7 @@ test_data
 Eigen
 .DS_Store
 .talismanrc
+.vscode
 
 # Prerequisites
 *.d
