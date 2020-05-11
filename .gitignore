@@ -1,4 +1,5 @@
-fmap_correlation.csv
+*.csv
+Eigen
 .DS_Store
 .talismanrc
 

@@ -137,6 +137,7 @@ int main(int argc, char** argv)
     R.diagonal() = rowSum;
     std::cout << "computed R" << std::endl;
     Eigen::SelfAdjointEigenSolver<Eigen::MatrixXd> esR(R);
+    std::cout << "created eigen solver object" << std::endl;
     Eigen::MatrixXd RInv = esR.operatorInverseSqrt();
     std::cout << "computed RInv" << std::endl;
 
@@ -151,7 +152,7 @@ int main(int argc, char** argv)
     Eigen::MatrixXd adjacencyMatrixNorm = RInv * adjacencyMatrix * CInv;
     std::cout << adjacencyMatrixNorm << std::endl;
 
-    Eigen::BDCSVD<Eigen::MatrixXd> SVD(adjacencyMatrixNorm, Eigen::ComputeThinU | Eigen::ComputeThinV);
+    Eigen::JacobiSVD<Eigen::MatrixXd> SVD(adjacencyMatrixNorm, Eigen::ComputeThinU | Eigen::ComputeThinV);
     Eigen::MatrixXd U = SVD.matrixU();
     Eigen::MatrixXd V = SVD.matrixV();
     
