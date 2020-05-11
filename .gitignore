@@ -1,4 +1,4 @@
-*.csv
+test_data
 Eigen
 .DS_Store
 .talismanrc
