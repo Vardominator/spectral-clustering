@@ -9,7 +9,6 @@
 #include <math.h>
 #include <numeric>
 
-#include "csv.h"
 #include "Eigen/Dense"
 
 
@@ -152,10 +151,13 @@ int main(int argc, char** argv)
     Eigen::MatrixXd adjacencyMatrixNorm = RInv * adjacencyMatrix * CInv;
     std::cout << adjacencyMatrixNorm << std::endl;
 
+    // singular value decomposition
     Eigen::JacobiSVD<Eigen::MatrixXd> SVD(adjacencyMatrixNorm, Eigen::ComputeThinU | Eigen::ComputeThinV);
     Eigen::MatrixXd U = SVD.matrixU();
     Eigen::MatrixXd V = SVD.matrixV();
-    
+    int tempK = 2;
+    U = U(Eigen::all, Eigen::seq(1, Eigen::last));
+    V = V(Eigen::all, Eigen::seq(1, Eigen::last));
     std::cout << U << std::endl;
     std::cout << V << std::endl;
 
