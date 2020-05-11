@@ -1,3 +1,4 @@
-# spectral-clustering
-high performance spectral clustering library
-g++ spectral_clustering.cpp -o spectral_clustering -std=c++11 && ./spectral_clustering test_data/gut_combined.csv
+# Spectral Co-Clustering C++ Library
+
+## Usage
+`g++ spectral_clustering.cpp -o spectral_clustering -std=c++11 && ./spectral_clustering $CSV_DATA`

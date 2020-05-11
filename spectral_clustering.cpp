@@ -123,7 +123,6 @@ int main(int argc, char** argv)
     
     adjacencyMatrix.resize(adjacencyMatrixPlaceholder.size(), adjacencyMatrixPlaceholder[0].size());
     
-
     for (int i = 0; i < adjacencyMatrixPlaceholder.size(); i++)
     {
         for (int j = 0; j < adjacencyMatrixPlaceholder[i].size(); j++)
@@ -132,13 +131,33 @@ int main(int argc, char** argv)
         }
     }
     
-    std::cout << adjacencyMatrix << std::endl;
+    // normalization
+    Eigen::MatrixXd R = Eigen::MatrixXd::Zero(adjacencyMatrixPlaceholder.size(), adjacencyMatrixPlaceholder.size());
+    Eigen::VectorXd rowSum = adjacencyMatrix.rowwise().sum();
+    R.diagonal() = rowSum;
+    std::cout << "computed R" << std::endl;
+    Eigen::SelfAdjointEigenSolver<Eigen::MatrixXd> esR(R);
+    Eigen::MatrixXd RInv = esR.operatorInverseSqrt();
+    std::cout << "computed RInv" << std::endl;
 
-    Eigen::BDCSVD<Eigen::MatrixXd> SVD(adjacencyMatrix, Eigen::ComputeThinU | Eigen::ComputeThinV);
+    Eigen::MatrixXd C = Eigen::MatrixXd::Zero(adjacencyMatrixPlaceholder[0].size(), adjacencyMatrixPlaceholder[0].size());
+    Eigen::VectorXd colSum = adjacencyMatrix.colwise().sum();
+    C.diagonal() = colSum;
+    std::cout << "computed C" << std::endl;
+    Eigen::SelfAdjointEigenSolver<Eigen::MatrixXd> esC(C);
+    Eigen::MatrixXd CInv = esC.operatorInverseSqrt();
+    std::cout << "computed CInv" << std::endl;
+
+    Eigen::MatrixXd adjacencyMatrixNorm = RInv * adjacencyMatrix * CInv;
+    std::cout << adjacencyMatrixNorm << std::endl;
+
+    Eigen::BDCSVD<Eigen::MatrixXd> SVD(adjacencyMatrixNorm, Eigen::ComputeThinU | Eigen::ComputeThinV);
     Eigen::MatrixXd U = SVD.matrixU();
     Eigen::MatrixXd V = SVD.matrixV();
+    
     std::cout << U << std::endl;
     std::cout << V << std::endl;
+
     // // Compute diagonal.
     // std::vector<float> diagonal = computeDiagonal(adjacencyMatrix);
 
