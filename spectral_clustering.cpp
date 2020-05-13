@@ -56,6 +56,10 @@ Compute Laplacian norm.
 */
 std::vector<std::vector<float>> computeLaplacianNorm(std::vector<float> diagonal, std::vector<std::vector<float>> laplacian);
 
+bool isSparse(Eigen::MatrixXd);
+
+void inverseSqrt(Eigen::VectorXd &vector);
+
 int main(int argc, char** argv)
 {
     // Check if the input file exists.
@@ -129,27 +133,25 @@ int main(int argc, char** argv)
             adjacencyMatrix(i, j) = adjacencyMatrixPlaceholder[i][j];
         }
     }
-    
-    // normalization
-    Eigen::MatrixXd R = Eigen::MatrixXd::Zero(adjacencyMatrixPlaceholder.size(), adjacencyMatrixPlaceholder.size());
-    Eigen::VectorXd rowSum = adjacencyMatrix.rowwise().sum();
-    R.diagonal() = rowSum;
-    std::cout << "computed R" << std::endl;
-    Eigen::SelfAdjointEigenSolver<Eigen::MatrixXd> esR(R);
-    std::cout << "created eigen solver object" << std::endl;
-    Eigen::MatrixXd RInv = esR.operatorInverseSqrt();
-    std::cout << "computed RInv" << std::endl;
 
-    Eigen::MatrixXd C = Eigen::MatrixXd::Zero(adjacencyMatrixPlaceholder[0].size(), adjacencyMatrixPlaceholder[0].size());
-    Eigen::VectorXd colSum = adjacencyMatrix.colwise().sum();
-    C.diagonal() = colSum;
-    std::cout << "computed C" << std::endl;
-    Eigen::SelfAdjointEigenSolver<Eigen::MatrixXd> esC(C);
-    Eigen::MatrixXd CInv = esC.operatorInverseSqrt();
-    std::cout << "computed CInv" << std::endl;
+
+    // bistochastic normalize 
+    // => scale normalize
+    // 0. Check sparsity of matrix
+    // 1. Make sure elements nonnegative
+    // 2. Calculated R^(-1/2) and C^(-1/2) efficiently (DONE)
+
+
+    // // normalization
+    Eigen::VectorXd rowSumSqrt = adjacencyMatrix.rowwise().sum();
+    inverseSqrt(rowSumSqrt);
+    auto RInv = rowSumSqrt.asDiagonal();
+
+    Eigen::VectorXd colSumSqrt = adjacencyMatrix.colwise().sum();
+    inverseSqrt(colSumSqrt);
+    auto CInv = colSumSqrt.asDiagonal();
 
     Eigen::MatrixXd adjacencyMatrixNorm = RInv * adjacencyMatrix * CInv;
-    std::cout << adjacencyMatrixNorm << std::endl;
 
     // singular value decomposition
     Eigen::JacobiSVD<Eigen::MatrixXd> SVD(adjacencyMatrixNorm, Eigen::ComputeThinU | Eigen::ComputeThinV);
@@ -160,6 +162,10 @@ int main(int argc, char** argv)
     V = V(Eigen::all, Eigen::seq(1, Eigen::last));
     std::cout << U << std::endl;
     std::cout << V << std::endl;
+
+
+
+
 
     // // Compute diagonal.
     // std::vector<float> diagonal = computeDiagonal(adjacencyMatrix);
@@ -181,7 +187,6 @@ bool FileExists(std::string &name)
     std::ifstream f(name.c_str());
     return f.good();
 }
-
 
 // ProcessCSV class
 std::vector<std::string> SplitRow(std::string row, char delimiter)
@@ -217,6 +222,19 @@ void Trim(std::string &str)
     }).base(), str.end());
 }
 
+
+bool isSparse(Eigen::MatrixXd matrix)
+{
+    return matrix.nonZeros() / matrix.size() < 0.75;
+}
+
+void inverseSqrt(Eigen::VectorXd &vector)
+{
+    for(int i = 0; i < vector.size(); i++)
+    {
+        vector(i) = 1.0f / sqrt(vector(i));
+    }
+}
 
 float distance(float pointA, float pointB)
 {
