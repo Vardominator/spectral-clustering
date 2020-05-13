@@ -165,8 +165,6 @@ int main(int argc, char** argv)
 
 
 
-
-
     // // Compute diagonal.
     // std::vector<float> diagonal = computeDiagonal(adjacencyMatrix);
 
