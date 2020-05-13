@@ -157,24 +157,18 @@ int main(int argc, char** argv)
     Eigen::JacobiSVD<Eigen::MatrixXd> SVD(adjacencyMatrixNorm, Eigen::ComputeThinU | Eigen::ComputeThinV);
     Eigen::MatrixXd U = SVD.matrixU();
     Eigen::MatrixXd V = SVD.matrixV();
-    int tempK = 2;
-    U = U(Eigen::all, Eigen::seq(1, Eigen::last));
-    V = V(Eigen::all, Eigen::seq(1, Eigen::last));
-    std::cout << U << std::endl;
-    std::cout << V << std::endl;
 
-
-
-    // // Compute diagonal.
-    // std::vector<float> diagonal = computeDiagonal(adjacencyMatrix);
-
-    // // Compute Laplacian.
-    // std::vector<std::vector<float>> laplacian = computeLaplacian(diagonal, adjacencyMatrix);
+    int clusterSize = 4;
     
-    // // Compute the Laplacian norm.
-    // std::vector<std::vector<float>> laplacianNorm = computeLaplacianNorm(diagonal, laplacian);
+    U = U(Eigen::all, Eigen::seq(1, clusterSize));
+    V = V(Eigen::all, Eigen::seq(1, clusterSize));
 
-    // // Compute eigenvectors / eigenvalues of the Laplacian norm.
+    auto ZU = RInv * U;
+    auto ZV = CInv * V;
+
+    Eigen::MatrixXd Z(ZU.rows() + ZV.rows(), ZU.cols());
+    Z << ZU, ZV;
+    std::cout << Z << std::endl;
 
     return 0;
 }
