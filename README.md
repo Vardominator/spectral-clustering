@@ -2,6 +2,7 @@
 
 ## Installation
 ```
+# Eigen
 wget https://gitlab.com/libeigen/eigen/-/archive/master/eigen-master.zip
 unzip eigen-master.zip
 mv eigen-master/Eigen .
@@ -18,6 +19,6 @@ g++ spectral_clustering.cpp -o spectral_clustering -std=c++11 && ./spectral_clus
     - CSV File path
     - CSV delimiter (or write delimiter detector)
     - Number of clusters
-- Find a CSV library to allows dynamic memory allocation automatic delimiter detection
-- Figure out why Eigen's SVD solver is so damn slow
+- Find a CSV library to allows dynamic memory allocation and automatic delimiter detection
 - Find a comprehensive k-means library
+- CMake installation

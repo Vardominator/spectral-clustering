@@ -10,7 +10,9 @@
 #include <numeric>
 
 #include "Eigen/Dense"
+#include "KMeans/KMeans.h"
 
+Eigen::IOFormat CleanFmt(3, 0, " ", "\n", "[", "]");
 
 /*
 Check if input CSV file path exists before proceeding.
@@ -158,17 +160,25 @@ int main(int argc, char** argv)
     Eigen::MatrixXd U = SVD.matrixU();
     Eigen::MatrixXd V = SVD.matrixV();
 
-    int clusterSize = 4;
+    int clusters = 2;
     
-    U = U(Eigen::all, Eigen::seq(1, clusterSize));
-    V = V(Eigen::all, Eigen::seq(1, clusterSize));
+    U = U(Eigen::all, Eigen::seq(1, clusters));
+    V = V(Eigen::all, Eigen::seq(1, clusters));
 
     auto ZU = RInv * U;
     auto ZV = CInv * V;
 
     Eigen::MatrixXd Z(ZU.rows() + ZV.rows(), ZU.cols());
     Z << ZU, ZV;
-    std::cout << Z << std::endl;
+    std::cout << Z.size() << std::endl;
+
+    Eigen::ArrayXXd zClusterCentroids = Eigen::ArrayXXd::Zero(clusters, Z.cols());
+    Eigen::ArrayXd zClusterAssigments = Eigen::ArrayXd::Zero(Z.size());
+
+    RunKMeans(Z.data(), Z.size(), Z.cols(), clusters, 100, 42, strdup("plusplus"), zClusterCentroids.data(), zClusterAssigments.data());
+
+    std::cout << zClusterCentroids.format(CleanFmt) << std::endl;
+    std::cout << zClusterAssigments.format(CleanFmt) << std::endl;
 
     return 0;
 }
