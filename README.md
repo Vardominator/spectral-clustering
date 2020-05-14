@@ -15,7 +15,7 @@ g++ spectral_clustering.cpp -o spectral_clustering -std=c++11 && ./spectral_clus
 ```
 
 ## Tasks
-- Argument parsing to include:
+- Argument parsing to specify clustering arguments (or just use a config file):
     - CSV File path
     - CSV delimiter (or write delimiter detector)
     - Number of clusters
