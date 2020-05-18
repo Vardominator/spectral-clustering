@@ -35,31 +35,6 @@ Trim leading and trailing whitespaces from string.
 */
 void Trim(std::string &str);
 
-
-// SpectralClustering class
-/*
-Compute weight.
-*/
-float distance(float pointA, float pointB);
-float weight(float pointA, float pointB);
-
-/*
-Compute diagonal.
-*/
-std::vector<float> computeDiagonal(std::vector<std::vector<float>> adjacencyMatrix);
-
-/*
-Compute Laplacian.
-*/
-std::vector<std::vector<float>> computeLaplacian(std::vector<float> diagonal, std::vector<std::vector<float>> adjacencyMatrix);
-
-/*
-Compute Laplacian norm.
-*/
-std::vector<std::vector<float>> computeLaplacianNorm(std::vector<float> diagonal, std::vector<std::vector<float>> laplacian);
-
-bool isSparse(Eigen::MatrixXd);
-
 void inverseSqrt(Eigen::VectorXd &vector);
 
 int main(int argc, char** argv)
@@ -110,7 +85,6 @@ int main(int argc, char** argv)
         float checkZeroSum = 0.0;
         while (it != values.end())
         {   
-            // float w = weight(start, stof(*it));
             float w = stof(*it);
             checkZeroSum += w;
             adjacencyRow.push_back(w);
@@ -136,7 +110,6 @@ int main(int argc, char** argv)
         }
     }
 
-
     // bistochastic normalize 
     // => scale normalize
     // 0. Check sparsity of matrix
@@ -147,10 +120,12 @@ int main(int argc, char** argv)
     // // normalization
     Eigen::VectorXd rowSumSqrt = adjacencyMatrix.rowwise().sum();
     inverseSqrt(rowSumSqrt);
+    rowSumSqrt = (rowSumSqrt.array().isFinite()).select(rowSumSqrt, 0);
     auto RInv = rowSumSqrt.asDiagonal();
 
     Eigen::VectorXd colSumSqrt = adjacencyMatrix.colwise().sum();
     inverseSqrt(colSumSqrt);
+    colSumSqrt = (colSumSqrt.array().isFinite()).select(colSumSqrt, 0);
     auto CInv = colSumSqrt.asDiagonal();
 
     Eigen::MatrixXd adjacencyMatrixNorm = RInv * adjacencyMatrix * CInv;
@@ -160,8 +135,13 @@ int main(int argc, char** argv)
     Eigen::MatrixXd U = SVD.matrixU();
     Eigen::MatrixXd V = SVD.matrixV();
 
-    int clusters = 2;
-    
+    int clusters = 10;
+    int clusterSize = 800;
+    int nFeatures = 10;
+    int nIters = 1000;
+    int seed = 42;
+    int nExamplesTotal = 4000;
+
     U = U(Eigen::all, Eigen::seq(1, clusters));
     V = V(Eigen::all, Eigen::seq(1, clusters));
 
@@ -170,15 +150,33 @@ int main(int argc, char** argv)
 
     Eigen::MatrixXd Z(ZU.rows() + ZV.rows(), ZU.cols());
     Z << ZU, ZV;
-    std::cout << Z.size() << std::endl;
 
     Eigen::ArrayXXd zClusterCentroids = Eigen::ArrayXXd::Zero(clusters, Z.cols());
     Eigen::ArrayXd zClusterAssigments = Eigen::ArrayXd::Zero(Z.size());
 
-    RunKMeans(Z.data(), Z.size(), Z.cols(), clusters, 100, 42, strdup("plusplus"), zClusterCentroids.data(), zClusterAssigments.data());
+    RunKMeans(Z.data(), nExamplesTotal, nFeatures, clusters, nIters, seed, strdup("plusplus"), zClusterCentroids.data(), zClusterAssigments.data());
 
-    std::cout << zClusterCentroids.format(CleanFmt) << std::endl;
-    std::cout << zClusterAssigments.format(CleanFmt) << std::endl;
+    // Assign row clusters
+    auto rowClusterAssignments = std::map<int, int>{};
+    for(int i = 0; i < adjacencyMatrixNorm.rows(); i++)
+    {
+        rowClusterAssignments.insert(std::make_pair(i, zClusterAssigments(i)));
+    }
+
+    // Assign column clusters
+    auto colClusterAssignments = std::map<int, int>{};
+    for(int i = 0; i < adjacencyMatrixNorm.cols(); i++)
+    {
+        colClusterAssignments.insert(std::make_pair(i, zClusterAssigments(adjacencyMatrixNorm.rows() + i)));
+    }
+
+    for (const auto &p : rowClusterAssignments) {
+        std::cout << "row[" << p.first << "] = " << p.second << '\n';
+    }
+
+    for (const auto &p : colClusterAssignments) {
+        std::cout << "col[" << p.first << "] = " << p.second << '\n';
+    }
 
     return 0;
 }
@@ -224,78 +222,10 @@ void Trim(std::string &str)
     }).base(), str.end());
 }
 
-
-bool isSparse(Eigen::MatrixXd matrix)
-{
-    return matrix.nonZeros() / matrix.size() < 0.75;
-}
-
 void inverseSqrt(Eigen::VectorXd &vector)
 {
     for(int i = 0; i < vector.size(); i++)
     {
         vector(i) = 1.0f / sqrt(vector(i));
     }
-}
-
-float distance(float pointA, float pointB)
-{
-    return sqrt(pow(pointA - pointB, 2));
-}
-float weight(float pointA, float pointB)
-{
-    return distance(pointA, pointB);
-}
-
-std::vector<float> computeDiagonal(std::vector<std::vector<float>> adjacencyMatrix)
-{
-    std::vector<float> diagonal;
-    for (auto & row : adjacencyMatrix)
-    {
-        float columnSum = 0.0;
-        for (auto & weight : row)
-        {
-            columnSum += weight;
-        }
-        diagonal.push_back(columnSum);
-    }
-    return diagonal;
-}
-
-std::vector<std::vector<float>> computeLaplacian(std::vector<float> diagonal, std::vector<std::vector<float>> adjacencyMatrix)
-{
-    std::vector<std::vector<float>> laplacian;
-    for (int rowIndex = 0; rowIndex < adjacencyMatrix.size(); rowIndex++)
-    {
-        std::vector<float> laplacianRow;
-        for (int columnIndex = 0; columnIndex < adjacencyMatrix[rowIndex].size(); columnIndex++)
-        {
-            if (rowIndex == columnIndex)
-            {
-                laplacianRow.push_back(diagonal[rowIndex] - adjacencyMatrix[rowIndex][columnIndex]);
-            }
-            else
-            {
-                laplacianRow.push_back(-1.0f * adjacencyMatrix[rowIndex][columnIndex]);
-            }
-        }
-        laplacian.push_back(laplacianRow);
-    }
-    return laplacian;
-}
-
-std::vector<std::vector<float>> computeLaplacianNorm(std::vector<float> diagonal, std::vector<std::vector<float>> laplacian)
-{
-    std::vector<std::vector<float>> laplacianNorm;
-
-    // compute inverse square diagonal
-    for (auto & d : diagonal)
-    {
-        if (d > 0.0)
-        {
-            d = pow(d, -1 * 0.5);   
-        }
-    }
-    
-    return laplacianNorm;
 }
